@@ -1,7 +1,6 @@
-
 import { useState, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ElevenLabsClient } from '@11labs/client';
+import { ElevenLabs } from 'elevenlabs';
 
 interface RecordingState {
   isRecording: boolean;
@@ -19,7 +18,7 @@ export const useRecording = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const elevenLabsClient = useRef<ElevenLabsClient | null>(null);
+  const elevenLabsClient = useRef<ElevenLabs | null>(null);
 
   // Initialize ElevenLabs client
   const initializeElevenLabs = () => {
@@ -27,7 +26,7 @@ export const useRecording = () => {
     if (!apiKey) {
       throw new Error('ElevenLabs API key not found. Please add your API key to localStorage with key "elevenlabs_api_key"');
     }
-    elevenLabsClient.current = new ElevenLabsClient({ apiKey });
+    elevenLabsClient.current = new ElevenLabs({ apiKey });
   };
 
   const startRecording = async () => {
@@ -146,7 +145,7 @@ export const useRecording = () => {
           const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
           
           // Transcribe with ElevenLabs
-          const transcription = await elevenLabsClient.current.speechToText.createSpeechToText({
+          const transcription = await elevenLabsClient.current.speechToText.convert({
             audio: audioFile,
             model_id: 'eleven_multilingual_v2'
           });
