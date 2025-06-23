@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Mic } from 'lucide-react';
 import ParticipantTable from './ParticipantTable';
-import CsvUpload from './CsvUpload';
 
 interface Participant {
   name: string;
@@ -49,19 +48,12 @@ const ParticipantDirectory = () => {
     }
   ]);
 
-  const handleParticipantsLoaded = (newParticipants: Participant[]) => {
-    setParticipants(newParticipants);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 text-center mb-12">
           Event Participant Directory
         </h1>
-        
-        {/* CSV Upload Section */}
-        <CsvUpload onParticipantsLoaded={handleParticipantsLoaded} />
         
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
           <div className="space-y-8">
