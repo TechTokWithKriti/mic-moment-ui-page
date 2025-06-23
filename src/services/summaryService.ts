@@ -33,7 +33,7 @@ export class SummaryService {
     const prompt = `Please analyze the following meeting transcript and provide:
 
 1. A key summary in exactly 2 sentences maximum
-2. Action items for the user (if any)
+2. Action items for the user (if any). But always show the 'Action Item' section in summary
 3. Suggested follow-up meeting dates/times (if applicable)
 
 Format your response as JSON with this structure:
