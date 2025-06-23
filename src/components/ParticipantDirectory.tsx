@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,6 +5,9 @@ import { Mic } from 'lucide-react';
 import ParticipantTable from './ParticipantTable';
 
 const ParticipantDirectory = () => {
+  const [whoIAm, setWhoIAm] = useState('');
+  const [whoIWantToMeet, setWhoIWantToMeet] = useState('');
+
   const participants = [
     {
       name: "Sarah Chen",
