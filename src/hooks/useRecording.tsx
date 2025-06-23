@@ -146,10 +146,10 @@ export const useRecording = () => {
           const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
           
           // Transcribe with ElevenLabs using the correct API format
-          const transcription = await elevenLabsClient.current.speechToText.convert(
-            audioFile,
-            'eleven_multilingual_v2'
-          );
+          const transcription = await elevenLabsClient.current.speechToText.convert({
+            model_id: 'eleven_multilingual_v2',
+            file: audioFile
+          });
           
           setRecordingState(prev => ({ 
             ...prev, 
