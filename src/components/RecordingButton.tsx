@@ -12,19 +12,19 @@ interface RecordingButtonProps {
 }
 
 const RecordingButton = ({ participantName, onTranscriptComplete }: RecordingButtonProps) => {
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('elevenlabs_api_key') || '');
+  const [agentId, setAgentId] = useState('');
+  const [showSetupForm, setShowSetupForm] = useState(false);
   const { isRecording, transcript, error, startRecording, stopRecording, conversationStatus } = useRecording();
 
   const handleRecordClick = async () => {
     if (!isRecording) {
-      if (!apiKey) {
-        setShowApiKeyInput(true);
+      const storedApiKey = localStorage.getItem('elevenlabs_api_key');
+      if (!storedApiKey || !agentId) {
+        setShowSetupForm(true);
         return;
       }
-      // For now, we'll use a placeholder agent ID
-      // In production, you'd have your actual ElevenLabs agent ID
-      await startRecording('your-agent-id-here');
+      await startRecording(agentId);
     } else {
       await stopRecording();
       if (transcript && onTranscriptComplete) {
@@ -33,32 +33,48 @@ const RecordingButton = ({ participantName, onTranscriptComplete }: RecordingBut
     }
   };
 
-  const handleApiKeySubmit = async () => {
-    if (apiKey.trim()) {
-      setShowApiKeyInput(false);
-      // Store API key temporarily (in production, this should be in Supabase secrets)
+  const handleSetupSubmit = async () => {
+    if (apiKey.trim() && agentId.trim()) {
       localStorage.setItem('elevenlabs_api_key', apiKey);
-      await startRecording('your-agent-id-here');
+      setShowSetupForm(false);
+      await startRecording(agentId);
     }
   };
 
-  if (showApiKeyInput) {
+  if (showSetupForm) {
     return (
-      <div className="flex flex-col gap-2 p-3 border rounded-lg bg-gray-50">
-        <Label htmlFor="api-key" className="text-xs">ElevenLabs API Key</Label>
-        <Input
-          id="api-key"
-          type="password"
-          placeholder="Enter your ElevenLabs API key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          className="text-xs"
-        />
-        <div className="flex gap-1">
-          <Button size="sm" onClick={handleApiKeySubmit} className="text-xs">
+      <div className="flex flex-col gap-3 p-4 border rounded-lg bg-gray-50 min-w-[300px]">
+        <div className="text-sm font-medium text-gray-900">ElevenLabs Setup</div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="api-key" className="text-xs">API Key</Label>
+          <Input
+            id="api-key"
+            type="password"
+            placeholder="Enter your ElevenLabs API key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="text-xs"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="agent-id" className="text-xs">Agent ID</Label>
+          <Input
+            id="agent-id"
+            type="text"
+            placeholder="Enter your ElevenLabs agent ID"
+            value={agentId}
+            onChange={(e) => setAgentId(e.target.value)}
+            className="text-xs"
+          />
+        </div>
+        
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSetupSubmit} className="text-xs flex-1">
             Start Recording
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowApiKeyInput(false)} className="text-xs">
+          <Button size="sm" variant="outline" onClick={() => setShowSetupForm(false)} className="text-xs">
             Cancel
           </Button>
         </div>
