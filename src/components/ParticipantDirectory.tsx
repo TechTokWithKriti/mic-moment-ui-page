@@ -1,45 +1,57 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Mic } from 'lucide-react';
 import ParticipantTable from './ParticipantTable';
+import CsvUpload from './CsvUpload';
+
+interface Participant {
+  name: string;
+  linkedinUrl: string;
+  email: string;
+  info: string;
+}
 
 const ParticipantDirectory = () => {
   const [whoIAm, setWhoIAm] = useState('');
   const [whoIWantToMeet, setWhoIWantToMeet] = useState('');
-
-  const participants = [
+  const [participants, setParticipants] = useState<Participant[]>([
     {
       name: "Sarah Chen",
       linkedinUrl: "https://linkedin.com/in/sarahchen",
       email: "sarah.chen@techcorp.com",
-      info: "Senior Product Manager at TechCorp with 8+ years in B2B SaaS. Expertise in user experience design and product strategy. Currently leading a team of 12 developers on their flagship platform."
+      info: "Senior Product Manager at TechCorp\nWants to meet: Investors and potential partners"
     },
     {
       name: "Michael Rodriguez",
       linkedinUrl: "https://linkedin.com/in/michaelrodriguez",
       email: "m.rodriguez@startup.io",
-      info: "Founder & CEO of StartupIO, a fintech company focused on small business lending. Previously VP of Engineering at a Fortune 500 company. Angel investor in 15+ startups."
+      info: "Founder & CEO at StartupIO\nWants to meet: Angel investors and mentors"
     },
     {
       name: "Emily Johnson",
       linkedinUrl: "https://linkedin.com/in/emilyjohnson",
       email: "emily.johnson@consulting.com",
-      info: "Management Consultant at McKinsey & Company specializing in digital transformation for healthcare organizations. MBA from Wharton, 6 years of consulting experience."
+      info: "Management Consultant at McKinsey & Company\nWants to meet: Healthcare executives and tech founders"
     },
     {
       name: "David Kim",
       linkedinUrl: "https://linkedin.com/in/davidkim",
       email: "david.kim@airesearch.org",
-      info: "Senior Data Scientist at Google AI Research. PhD in Machine Learning from Stanford. Published 25+ papers on neural networks and computer vision. Speaker at major AI conferences."
+      info: "Senior Data Scientist at Google AI Research\nWants to meet: AI researchers and startup founders"
     },
     {
       name: "Lisa Wang",
       linkedinUrl: "https://linkedin.com/in/lisawang",
       email: "lisa.wang@ecommerce.com",
-      info: "VP of Marketing at major e-commerce platform. Expert in digital marketing, customer acquisition, and growth strategies. Built marketing teams from 5 to 50+ people."
+      info: "VP of Marketing at major e-commerce platform\nWants to meet: Growth hackers and marketing professionals"
     }
-  ];
+  ]);
+
+  const handleParticipantsLoaded = (newParticipants: Participant[]) => {
+    setParticipants(newParticipants);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -47,6 +59,9 @@ const ParticipantDirectory = () => {
         <h1 className="text-3xl font-bold text-gray-900 text-center mb-12">
           Event Participant Directory
         </h1>
+        
+        {/* CSV Upload Section */}
+        <CsvUpload onParticipantsLoaded={handleParticipantsLoaded} />
         
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
           <div className="space-y-8">

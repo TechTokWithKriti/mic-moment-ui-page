@@ -108,9 +108,9 @@ const ParticipantTable = ({ participants }: ParticipantTableProps) => {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left py-4 px-6 font-semibold text-gray-900">Name</th>
-              <th className="text-left py-4 px-6 font-semibold text-gray-900">Contact</th>
+              <th className="text-left py-4 px-6 font-semibold text-gray-900">Connect</th>
               <th className="text-left py-4 px-6 font-semibold text-gray-900">Meeting Recording</th>
-              <th className="text-left py-4 px-6 font-semibold text-gray-900">Info Found</th>
+              <th className="text-left py-4 px-6 font-semibold text-gray-900">Info</th>
               <th className="text-left py-4 px-6 font-semibold text-gray-900">Follow-up</th>
             </tr>
           </thead>
@@ -122,13 +122,17 @@ const ParticipantTable = ({ participants }: ParticipantTableProps) => {
                 </td>
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-3">
-                    <a
-                      href={participant.linkedinUrl}
-                      className="text-blue-600 hover:text-blue-800 flex items-center"
-                      title="LinkedIn Profile"
-                    >
-                      <Linkedin className="w-5 h-5" />
-                    </a>
+                    {participant.linkedinUrl && (
+                      <a
+                        href={participant.linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 flex items-center"
+                        title="LinkedIn Profile"
+                      >
+                        <Linkedin className="w-5 h-5" />
+                      </a>
+                    )}
                     <a
                       href={`mailto:${participant.email}`}
                       className="text-gray-600 hover:text-gray-800 flex items-center"
@@ -150,7 +154,9 @@ const ParticipantTable = ({ participants }: ParticipantTableProps) => {
                   />
                 </td>
                 <td className="py-4 px-6 text-gray-700 max-w-md">
-                  {participant.info}
+                  <div className="whitespace-pre-line text-sm">
+                    {participant.info}
+                  </div>
                 </td>
                 <td className="py-4 px-6">
                   <Dialog>
