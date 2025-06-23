@@ -103,13 +103,18 @@ export const useRecording = () => {
       audioChunksRef.current = [];
       
       mediaRecorderRef.current.ondataavailable = (event) => {
+        console.log('Data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
       
-      // Start recording
-      mediaRecorderRef.current.start(1000); // Collect data every second
+      mediaRecorderRef.current.onstop = () => {
+        console.log('MediaRecorder stopped, total chunks:', audioChunksRef.current.length);
+      };
+      
+      // Start recording with shorter intervals to ensure data collection
+      mediaRecorderRef.current.start(100); // Collect data every 100ms instead of 1000ms
       setRecordingState(prev => ({ 
         ...prev, 
         isRecording: true, 
@@ -150,8 +155,11 @@ export const useRecording = () => {
         await new Promise<void>((resolve) => {
           if (mediaRecorderRef.current) {
             mediaRecorderRef.current.onstop = () => {
+              console.log('Recording stopped, chunks collected:', audioChunksRef.current.length);
               resolve();
             };
+          } else {
+            resolve();
           }
         });
       }
@@ -166,6 +174,8 @@ export const useRecording = () => {
       
       // Process the recorded audio with ElevenLabs
       if (audioChunksRef.current.length > 0 && elevenLabsClient.current) {
+        console.log('Processing audio chunks:', audioChunksRef.current.length);
+        
         toast({
           title: "Processing Recording",
           description: "Transcribing your meeting with ElevenLabs...",
@@ -176,6 +186,12 @@ export const useRecording = () => {
           const audioBlob = new Blob(audioChunksRef.current, { 
             type: mimeTypeRef.current || 'audio/webm' 
           });
+          
+          console.log('Audio blob size:', audioBlob.size, 'bytes');
+          
+          if (audioBlob.size === 0) {
+            throw new Error('No audio data recorded');
+          }
           
           // Convert to the format ElevenLabs expects
           const fileExtension = mimeTypeRef.current.includes('webm') ? 'webm' : 
@@ -219,9 +235,11 @@ export const useRecording = () => {
           });
         }
       } else {
+        console.log('No audio chunks available for transcription');
         toast({
-          title: "Recording Stopped",
-          description: "Your meeting has been recorded (no audio data to transcribe)",
+          title: "No Audio Recorded",
+          description: "No audio data was captured. Please try speaking closer to the microphone.",
+          variant: "destructive",
         });
       }
       
