@@ -262,10 +262,10 @@ export const useRecording = () => {
           console.log('- File size:', audioFile.size);
           console.log('- File type:', audioFile.type);
           
-          // Transcribe with ElevenLabs using the correct API format
+          // Transcribe with ElevenLabs using the correct API format and valid model
           const transcription = await elevenLabsClient.current.speechToText.convert({
             file: audioFile,
-            model_id: 'eleven_multilingual_v2'
+            model_id: 'scribe_v1'
           });
           
           console.log('ElevenLabs response:', transcription);
