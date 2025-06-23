@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +9,10 @@ import { useSummary } from '@/hooks/useSummary';
 interface RecordingButtonProps {
   participantName: string;
   onTranscriptComplete?: (transcript: string) => void;
+  onSummaryComplete?: (summary: any) => void;
 }
 
-const RecordingButton = ({ participantName, onTranscriptComplete }: RecordingButtonProps) => {
+const RecordingButton = ({ participantName, onTranscriptComplete, onSummaryComplete }: RecordingButtonProps) => {
   const { isRecording, transcript, error, startRecording, stopRecording } = useRecording();
   const { isLoading: isSummarizing, result: summary, error: summaryError, summarizeTranscript, clearSummary } = useSummary();
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('elevenlabs_api_key') || '');
@@ -51,6 +51,12 @@ const RecordingButton = ({ participantName, onTranscriptComplete }: RecordingBut
       await summarizeTranscript(transcript);
     }
   };
+
+  React.useEffect(() => {
+    if (summary && onSummaryComplete) {
+      onSummaryComplete(summary);
+    }
+  }, [summary, onSummaryComplete]);
 
   if (showApiKeyInput) {
     return (
