@@ -20,6 +20,7 @@ export const useRecording = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const elevenLabsClient = useRef<ElevenLabsClient | null>(null);
+  const mimeTypeRef = useRef<string>('');
 
   // Initialize ElevenLabs client
   const initializeElevenLabs = () => {
@@ -28,6 +29,29 @@ export const useRecording = () => {
       throw new Error('ElevenLabs API key not found. Please add your API key to localStorage with key "elevenlabs_api_key"');
     }
     elevenLabsClient.current = new ElevenLabsClient({ apiKey });
+  };
+
+  // Get supported MIME type for MediaRecorder
+  const getSupportedMimeType = () => {
+    const mimeTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/ogg;codecs=opus',
+      'audio/ogg'
+    ];
+
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        console.log('Using supported MIME type:', mimeType);
+        return mimeType;
+      }
+    }
+    
+    console.log('No supported MIME type found, using default');
+    return '';
   };
 
   const startRecording = async () => {
@@ -63,10 +87,19 @@ export const useRecording = () => {
       console.log('Microphone access granted');
       streamRef.current = stream;
       
+      // Get supported MIME type
+      const supportedMimeType = getSupportedMimeType();
+      mimeTypeRef.current = supportedMimeType;
+      
       // Set up MediaRecorder for audio recording
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm'
-      });
+      if (supportedMimeType) {
+        mediaRecorderRef.current = new MediaRecorder(stream, {
+          mimeType: supportedMimeType
+        });
+      } else {
+        mediaRecorderRef.current = new MediaRecorder(stream);
+      }
+      
       audioChunksRef.current = [];
       
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -139,16 +172,25 @@ export const useRecording = () => {
         });
         
         try {
-          // Create audio blob from chunks
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          // Create audio blob from chunks with the MIME type that was used
+          const audioBlob = new Blob(audioChunksRef.current, { 
+            type: mimeTypeRef.current || 'audio/webm' 
+          });
           
           // Convert to the format ElevenLabs expects
-          const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
+          const fileExtension = mimeTypeRef.current.includes('webm') ? 'webm' : 
+                               mimeTypeRef.current.includes('mp4') ? 'mp4' :
+                               mimeTypeRef.current.includes('wav') ? 'wav' :
+                               mimeTypeRef.current.includes('ogg') ? 'ogg' : 'webm';
+          
+          const audioFile = new File([audioBlob], `recording.${fileExtension}`, { 
+            type: mimeTypeRef.current || 'audio/webm' 
+          });
           
           // Transcribe with ElevenLabs using the correct API format
           const transcription = await elevenLabsClient.current.speechToText.convert({
-            model_id: 'eleven_multilingual_v2',
-            file: audioFile
+            file: audioFile,
+            model_id: 'eleven_multilingual_v2'
           });
           
           setRecordingState(prev => ({ 
