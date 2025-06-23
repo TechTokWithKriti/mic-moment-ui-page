@@ -27,7 +27,8 @@ export const useRecording = () => {
     },
     onMessage: (message) => {
       console.log('Message received:', message);
-      if (message.type === 'user_transcript') {
+      // Handle the message based on its actual structure
+      if (message && typeof message === 'object' && 'message' in message) {
         setRecordingState(prev => ({ 
           ...prev, 
           transcript: prev.transcript + ' ' + message.message 
@@ -36,14 +37,15 @@ export const useRecording = () => {
     },
     onError: (error) => {
       console.error('ElevenLabs error:', error);
+      const errorMessage = typeof error === 'string' ? error : 'Recording error occurred';
       setRecordingState(prev => ({ 
         ...prev, 
-        error: error.message || 'Recording error occurred',
+        error: errorMessage,
         isRecording: false 
       }));
       toast({
         title: "Recording Error",
-        description: error.message || 'An error occurred during recording',
+        description: errorMessage,
         variant: "destructive",
       });
     },
