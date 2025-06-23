@@ -83,8 +83,10 @@ export const useRecording = () => {
       const data = await response.json();
       console.log('Got signed URL:', data.signed_url);
       
-      // Start the conversation with the signed URL
-      await conversation.startSession({ url: data.signed_url });
+      // Start the conversation with the signed URL using origin parameter
+      await conversation.startSession({ 
+        origin: data.signed_url 
+      });
       
       setRecordingState(prev => ({ ...prev, transcript: '', error: null }));
       
