@@ -1,6 +1,5 @@
 
-import { useState } from 'react';
-import { useConversation } from '@11labs/react';
+import { useState, useRef } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
 interface RecordingState {
@@ -16,87 +15,91 @@ export const useRecording = () => {
     error: null,
   });
 
-  const conversation = useConversation({
-    onConnect: () => {
-      console.log('Connected to ElevenLabs');
-      setRecordingState(prev => ({ ...prev, isRecording: true, error: null }));
-    },
-    onDisconnect: () => {
-      console.log('Disconnected from ElevenLabs');
-      setRecordingState(prev => ({ ...prev, isRecording: false }));
-    },
-    onMessage: (message) => {
-      console.log('Message received:', message);
-      // Handle the message based on its actual structure
-      if (message && typeof message === 'object' && 'message' in message) {
-        setRecordingState(prev => ({ 
-          ...prev, 
-          transcript: prev.transcript + ' ' + message.message 
-        }));
-      }
-    },
-    onError: (error) => {
-      console.error('ElevenLabs error:', error);
-      const errorMessage = typeof error === 'string' ? error : 'Recording error occurred';
-      setRecordingState(prev => ({ 
-        ...prev, 
-        error: errorMessage,
-        isRecording: false 
-      }));
-      toast({
-        title: "Recording Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
 
-  const startRecording = async (agentId: string) => {
+  const startRecording = async () => {
     try {
-      console.log('Starting recording with agent ID:', agentId);
+      console.log('Starting recording...');
       
-      // Request microphone permission first
+      // Request microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('Microphone access granted');
       
-      // Stop the stream since ElevenLabs will handle it
-      stream.getTracks().forEach(track => track.stop());
+      // Set up MediaRecorder for audio recording
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
       
-      // Get API key from localStorage
-      const apiKey = localStorage.getItem('elevenlabs_api_key');
-      if (!apiKey) {
-        throw new Error('ElevenLabs API key not found. Please enter your API key.');
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      // Set up Speech Recognition for live transcription
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'en-US';
+        
+        recognitionRef.current.onresult = (event: any) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          
+          setRecordingState(prev => ({
+            ...prev,
+            transcript: prev.transcript + finalTranscript + interimTranscript
+          }));
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setRecordingState(prev => ({
+            ...prev,
+            error: `Speech recognition error: ${event.error}`
+          }));
+        };
+        
+        recognitionRef.current.start();
+      } else {
+        console.warn('Speech recognition not supported');
+        toast({
+          title: "Speech Recognition Not Supported",
+          description: "Your browser doesn't support speech recognition. Audio will be recorded but not transcribed live.",
+          variant: "destructive",
+        });
       }
       
-      // Generate signed URL using the API key
-      const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`, {
-        method: 'GET',
-        headers: {
-          'xi-api-key': apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get signed URL: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Got signed URL:', data.signed_url);
-      
-      // Start the conversation with the signed URL using signedUrl parameter
-      await conversation.startSession({ 
-        signedUrl: data.signed_url 
-      });
-      
-      setRecordingState(prev => ({ ...prev, transcript: '', error: null }));
+      // Start recording
+      mediaRecorderRef.current.start();
+      setRecordingState(prev => ({ 
+        ...prev, 
+        isRecording: true, 
+        error: null,
+        transcript: ''
+      }));
       
       toast({
         title: "Recording Started",
-        description: "Speak now to record your meeting recap",
+        description: "Speak now to record your meeting",
       });
+      
     } catch (error) {
       console.error('Failed to start recording:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start recording. Please check microphone permissions and API key.';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start recording. Please check microphone permissions.';
       setRecordingState(prev => ({ 
         ...prev, 
         error: errorMessage,
@@ -112,11 +115,26 @@ export const useRecording = () => {
 
   const stopRecording = async () => {
     try {
-      await conversation.endSession();
+      // Stop speech recognition
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      
+      // Stop media recorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        
+        // Stop all tracks
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      setRecordingState(prev => ({ ...prev, isRecording: false }));
+      
       toast({
         title: "Recording Stopped",
-        description: "Your meeting recap has been recorded",
+        description: "Your meeting has been recorded and transcribed",
       });
+      
     } catch (error) {
       console.error('Failed to stop recording:', error);
       toast({
@@ -131,6 +149,5 @@ export const useRecording = () => {
     ...recordingState,
     startRecording,
     stopRecording,
-    conversationStatus: conversation.status,
   };
 };
