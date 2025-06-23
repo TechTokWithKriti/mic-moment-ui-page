@@ -1,6 +1,6 @@
-
 import { Button } from '@/components/ui/button';
-import { Mic, Linkedin } from 'lucide-react';
+import { Linkedin } from 'lucide-react';
+import RecordingButton from './RecordingButton';
 
 interface Participant {
   name: string;
@@ -13,6 +13,12 @@ interface ParticipantTableProps {
 }
 
 const ParticipantTable = ({ participants }: ParticipantTableProps) => {
+  const handleTranscriptComplete = (participantName: string, transcript: string) => {
+    console.log(`Transcript for ${participantName}:`, transcript);
+    // Here you would typically send the transcript to your backend
+    // or prepare it for OpenAI summarization
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -41,13 +47,12 @@ const ParticipantTable = ({ participants }: ParticipantTableProps) => {
                   </a>
                 </td>
                 <td className="py-4 px-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </Button>
+                  <RecordingButton
+                    participantName={participant.name}
+                    onTranscriptComplete={(transcript) => 
+                      handleTranscriptComplete(participant.name, transcript)
+                    }
+                  />
                 </td>
                 <td className="py-4 px-6 text-gray-700 max-w-md">
                   {participant.info}
