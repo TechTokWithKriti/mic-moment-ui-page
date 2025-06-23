@@ -21,7 +21,7 @@ export const useEmail = () => {
     error: null,
   });
 
-  const generateEmail = async (participantName: string, summary: string, actionItems: string[], followUpSuggestions: string[]) => {
+  const generateEmail = async (participantName: string, summary: string | null, actionItems: string[], followUpSuggestions: string[], participantInfo?: string) => {
     setEmailState(prev => ({ 
       ...prev, 
       isGenerating: true, 
@@ -34,7 +34,7 @@ export const useEmail = () => {
         description: "Creating personalized follow-up email...",
       });
 
-      const content = await emailService.generateEmail(participantName, summary, actionItems, followUpSuggestions);
+      const content = await emailService.generateEmail(participantName, summary, actionItems, followUpSuggestions, participantInfo);
       
       setEmailState(prev => ({ 
         ...prev, 
@@ -73,18 +73,27 @@ export const useEmail = () => {
     });
   };
 
-  const scheduleEmail = (emailContent: EmailContent) => {
-    // Create mailto link with pre-filled content
-    const subject = encodeURIComponent(emailContent.subject);
-    const body = encodeURIComponent(emailContent.body);
-    const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+  const createMeetingInvite = (emailContent: EmailContent, participantEmail: string) => {
+    // Create Google Calendar meeting invite URL
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 7); // Next week
+    startDate.setHours(17, 0, 0, 0); // 5 PM
     
-    // Open the default email client
-    window.open(mailtoLink, '_blank');
+    const endDate = new Date(startDate);
+    endDate.setMinutes(15); // 15 minute meeting
+    
+    const formatDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+    
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(emailContent.subject)}&dates=${formatDate(startDate)}/${formatDate(endDate)}&details=${encodeURIComponent(emailContent.body)}&add=${encodeURIComponent(participantEmail)}`;
+    
+    // Open Google Calendar
+    window.open(googleCalendarUrl, '_blank');
     
     toast({
-      title: "Email Opened",
-      description: "Your default email client should open with the pre-filled email",
+      title: "Meeting Invite Created",
+      description: "Google Calendar should open with the pre-filled meeting invite",
     });
   };
 
@@ -92,6 +101,6 @@ export const useEmail = () => {
     ...emailState,
     generateEmail,
     clearEmail,
-    scheduleEmail,
+    createMeetingInvite,
   };
 };

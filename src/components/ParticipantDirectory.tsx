@@ -6,35 +6,37 @@ import { Mic } from 'lucide-react';
 import ParticipantTable from './ParticipantTable';
 
 const ParticipantDirectory = () => {
-  const [whoIAm, setWhoIAm] = useState('');
-  const [whoIWantToMeet, setWhoIWantToMeet] = useState('');
-
   const participants = [
     {
-      name: 'Sarah Chen',
-      linkedinUrl: '#',
-      info: 'Product Manager at TechCorp, AI enthusiast, looking to connect with founders',
+      name: "Sarah Chen",
+      linkedinUrl: "https://linkedin.com/in/sarahchen",
+      email: "sarah.chen@techcorp.com",
+      info: "Senior Product Manager at TechCorp with 8+ years in B2B SaaS. Expertise in user experience design and product strategy. Currently leading a team of 12 developers on their flagship platform."
     },
     {
-      name: 'Marcus Rodriguez',
-      linkedinUrl: '#',
-      info: 'Full-stack developer, startup advisor, interested in fintech opportunities',
+      name: "Michael Rodriguez",
+      linkedinUrl: "https://linkedin.com/in/michaelrodriguez",
+      email: "m.rodriguez@startup.io",
+      info: "Founder & CEO of StartupIO, a fintech company focused on small business lending. Previously VP of Engineering at a Fortune 500 company. Angel investor in 15+ startups."
     },
     {
-      name: 'Emily Watson',
-      linkedinUrl: '#',
-      info: 'Marketing Director, B2B SaaS expert, seeking partnerships and collaborations',
+      name: "Emily Johnson",
+      linkedinUrl: "https://linkedin.com/in/emilyjohnson",
+      email: "emily.johnson@consulting.com",
+      info: "Management Consultant at McKinsey & Company specializing in digital transformation for healthcare organizations. MBA from Wharton, 6 years of consulting experience."
     },
     {
-      name: 'David Kim',
-      linkedinUrl: '#',
-      info: 'Data Scientist, ML researcher, looking for technical co-founders',
+      name: "David Kim",
+      linkedinUrl: "https://linkedin.com/in/davidkim",
+      email: "david.kim@airesearch.org",
+      info: "Senior Data Scientist at Google AI Research. PhD in Machine Learning from Stanford. Published 25+ papers on neural networks and computer vision. Speaker at major AI conferences."
     },
     {
-      name: 'Lisa Thompson',
-      linkedinUrl: '#',
-      info: 'Sales Leader, enterprise solutions, interested in networking with executives',
-    },
+      name: "Lisa Wang",
+      linkedinUrl: "https://linkedin.com/in/lisawang",
+      email: "lisa.wang@ecommerce.com",
+      info: "VP of Marketing at major e-commerce platform. Expert in digital marketing, customer acquisition, and growth strategies. Built marketing teams from 5 to 50+ people."
+    }
   ];
 
   return (
