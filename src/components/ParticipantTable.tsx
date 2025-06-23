@@ -62,12 +62,43 @@ const ParticipantTable = ({ participants }: ParticipantTableProps) => {
   const handleCreateMeeting = () => {
     if (emailContent && selectedParticipant) {
       const participant = participants.find(p => p.name === selectedParticipant);
+      const participantSummary = summaries[selectedParticipant];
+      
       if (participant) {
-        createMeetingInvite(emailContent, participant.email);
+        createMeetingInvite(
+          emailContent, 
+          participant.email, 
+          participantSummary?.followUpSuggestions || []
+        );
         clearEmail();
         setSelectedParticipant('');
       }
     }
+  };
+
+  const getSchedulingInfo = (participantName: string) => {
+    const participantSummary = summaries[participantName];
+    if (participantSummary?.followUpSuggestions && participantSummary.followUpSuggestions.length > 0) {
+      // Parse suggested timing from the conversation
+      const suggestions = participantSummary.followUpSuggestions.join(' ');
+      
+      if (/tomorrow/i.test(suggestions)) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return `Tomorrow at suggested time from conversation`;
+      } else if (/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i.test(suggestions)) {
+        const dayMatch = suggestions.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+        return `Next ${dayMatch?.[1]} at suggested time`;
+      } else if (/(\d{1,2}):(\d{2})\s*(AM|PM)/i.test(suggestions)) {
+        const timeMatch = suggestions.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        return `Next week at ${timeMatch?.[0]}`;
+      } else if (/(morning|afternoon|evening)/i.test(suggestions)) {
+        const timeMatch = suggestions.match(/(morning|afternoon|evening)/i);
+        return `Next week in the ${timeMatch?.[0]}`;
+      }
+    }
+    
+    return "Next week at 5:00 PM EST";
   };
 
   return (
@@ -159,7 +190,7 @@ const ParticipantTable = ({ participants }: ParticipantTableProps) => {
                               <strong>Meeting Details:</strong><br />
                               Invitee: {participant.email}<br />
                               Duration: 15 minutes<br />
-                              Suggested Time: Next week at 5:00 PM EST
+                              Suggested Time: {getSchedulingInfo(participant.name)}
                             </p>
                           </div>
                           

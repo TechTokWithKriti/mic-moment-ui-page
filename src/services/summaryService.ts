@@ -30,17 +30,19 @@ export class SummaryService {
       throw new Error('No transcript provided for summarization');
     }
 
-    const prompt = `Please analyze the following meeting transcript and provide:
+    const prompt = `Please analyze the following conversation transcript and provide:
 
 1. A key summary in exactly 2 sentences maximum
 2. Action items for the user (if any). But always show the 'Action Item' section in summary
-3. Suggested follow-up meeting dates/times (if applicable)
+3. Suggested follow-up meeting dates/times based on what was discussed in the conversation. If specific times or dates were mentioned, include those. If general timeframes were discussed (like "next week", "in a few days"), suggest specific options within that range. If no timing was discussed, suggest "Schedule a 15-minute follow-up call within the next week"
+
+Context: This conversation is either between two people (user and attendee) or the user's notes about a verbal conversation with an attendee.
 
 Format your response as JSON with this structure:
 {
   "summary": "Two sentence summary here.",
   "actionItems": ["Action item 1", "Action item 2"],
-  "followUpSuggestions": ["Suggestion 1", "Suggestion 2"]
+  "followUpSuggestions": ["Specific suggestion based on conversation timing", "Alternative suggestion if applicable"]
 }
 
 Transcript:
@@ -52,7 +54,7 @@ ${transcript}`;
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that summarizes meeting transcripts. Always respond with valid JSON only.'
+            content: 'You are a helpful assistant that summarizes meeting transcripts and provides intelligent follow-up suggestions based on the conversation context. Pay special attention to any dates, times, or scheduling preferences mentioned. Always respond with valid JSON only.'
           },
           {
             role: 'user',
