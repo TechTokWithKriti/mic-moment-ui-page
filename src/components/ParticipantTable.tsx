@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Mic } from 'lucide-react';
+import { Mic, Linkedin } from 'lucide-react';
 
 interface Participant {
   name: string;
@@ -37,7 +37,7 @@ const ParticipantTable = ({ participants }: ParticipantTableProps) => {
                     href={participant.linkedinUrl}
                     className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
                   >
-                    🔗 View Profile
+                    <Linkedin className="w-5 h-5" />
                   </a>
                 </td>
                 <td className="py-4 px-6">
