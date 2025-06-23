@@ -1,8 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Mic } from 'lucide-react';
 import ParticipantTable from './ParticipantTable';
 
 interface Participant {
@@ -13,9 +12,9 @@ interface Participant {
 }
 
 const ParticipantDirectory = () => {
-  const [whoIAm, setWhoIAm] = useState('');
-  const [whoIWantToMeet, setWhoIWantToMeet] = useState('');
-  const [participants, setParticipants] = useState<Participant[]>([
+  const [whoIAm, setWhoIAm] = useState(() => localStorage.getItem('whoIAm') || '');
+  const [whoIWantToMeet, setWhoIWantToMeet] = useState(() => localStorage.getItem('whoIWantToMeet') || '');
+  const [allParticipants] = useState<Participant[]>([
     {
       name: "Sarah Chen",
       linkedinUrl: "https://linkedin.com/in/sarahchen",
@@ -47,6 +46,59 @@ const ParticipantDirectory = () => {
       info: "VP of Marketing at major e-commerce platform\nWants to meet: Growth hackers and marketing professionals"
     }
   ]);
+  const [participants, setParticipants] = useState<Participant[]>(allParticipants);
+
+  const calculateMatchScore = (participant: Participant, searchCriteria: string): number => {
+    if (!searchCriteria.trim()) return 0;
+    
+    const criteria = searchCriteria.toLowerCase();
+    const participantInfo = participant.info.toLowerCase();
+    
+    let score = 0;
+    const keywords = criteria.split(/\s+/).filter(word => word.length > 2);
+    
+    keywords.forEach(keyword => {
+      if (participantInfo.includes(keyword)) {
+        score += 1;
+      }
+    });
+    
+    return score;
+  };
+
+  const updateParticipantOrder = () => {
+    if (!whoIWantToMeet.trim()) {
+      setParticipants([...allParticipants]);
+      return;
+    }
+
+    const participantsWithScores = allParticipants.map(participant => ({
+      ...participant,
+      matchScore: calculateMatchScore(participant, whoIWantToMeet)
+    }));
+
+    const sortedParticipants = participantsWithScores
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 5)
+      .map(({ matchScore, ...participant }) => participant);
+
+    setParticipants(sortedParticipants);
+  };
+
+  const handleWhoIAmSubmit = () => {
+    localStorage.setItem('whoIAm', whoIAm);
+    console.log('Who I Am saved:', whoIAm);
+  };
+
+  const handleWhoIWantToMeetSubmit = () => {
+    localStorage.setItem('whoIWantToMeet', whoIWantToMeet);
+    updateParticipantOrder();
+    console.log('Who I Want to Meet saved:', whoIWantToMeet);
+  };
+
+  useEffect(() => {
+    updateParticipantOrder();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -71,9 +123,11 @@ const ParticipantDirectory = () => {
                   onChange={(e) => setWhoIAm(e.target.value)}
                   className="flex-1 min-h-[80px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 h-auto">
-                  <Mic className="w-4 h-4 mr-2" />
-                  Record
+                <Button 
+                  onClick={handleWhoIAmSubmit}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 h-auto"
+                >
+                  Submit
                 </Button>
               </div>
             </div>
@@ -92,9 +146,11 @@ const ParticipantDirectory = () => {
                   onChange={(e) => setWhoIWantToMeet(e.target.value)}
                   className="flex-1 min-h-[80px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 h-auto">
-                  <Mic className="w-4 h-4 mr-2" />
-                  Record
+                <Button 
+                  onClick={handleWhoIWantToMeetSubmit}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 h-auto"
+                >
+                  Submit
                 </Button>
               </div>
             </div>
@@ -105,7 +161,9 @@ const ParticipantDirectory = () => {
         <ParticipantTable participants={participants} />
         
         <div className="text-center mt-8">
-          <p className="text-gray-600">Total Participants: {participants.length}</p>
+          <p className="text-gray-600">
+            {whoIWantToMeet.trim() ? `Top ${participants.length} matches based on your criteria` : `Total Participants: ${participants.length}`}
+          </p>
         </div>
 
         <div className="text-center mt-12 text-sm text-gray-500">
