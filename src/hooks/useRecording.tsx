@@ -76,15 +76,18 @@ export const useRecording = () => {
         return;
       }
       
-      // Request microphone permission
+      // Request microphone permission with detailed constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 44100
+          sampleRate: 44100,
+          channelCount: 1
         } 
       });
       console.log('Microphone access granted');
+      console.log('Audio stream tracks:', stream.getAudioTracks().length);
+      console.log('Audio track settings:', stream.getAudioTracks()[0]?.getSettings());
       streamRef.current = stream;
       
       // Get supported MIME type
@@ -92,29 +95,52 @@ export const useRecording = () => {
       mimeTypeRef.current = supportedMimeType;
       
       // Set up MediaRecorder for audio recording
+      const mediaRecorderOptions: MediaRecorderOptions = {};
       if (supportedMimeType) {
-        mediaRecorderRef.current = new MediaRecorder(stream, {
-          mimeType: supportedMimeType
-        });
-      } else {
-        mediaRecorderRef.current = new MediaRecorder(stream);
+        mediaRecorderOptions.mimeType = supportedMimeType;
       }
+      
+      mediaRecorderRef.current = new MediaRecorder(stream, mediaRecorderOptions);
+      console.log('MediaRecorder created with state:', mediaRecorderRef.current.state);
+      console.log('MediaRecorder MIME type:', mediaRecorderRef.current.mimeType);
       
       audioChunksRef.current = [];
       
       mediaRecorderRef.current.ondataavailable = (event) => {
-        console.log('Data available:', event.data.size, 'bytes');
+        console.log('Data available event fired:');
+        console.log('- Event data size:', event.data.size, 'bytes');
+        console.log('- Event data type:', event.data.type);
+        console.log('- Current chunks count before:', audioChunksRef.current.length);
+        
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+          console.log('- Chunk added! New total chunks:', audioChunksRef.current.length);
+        } else {
+          console.log('- No data in event, chunk not added');
         }
       };
       
       mediaRecorderRef.current.onstop = () => {
-        console.log('MediaRecorder stopped, total chunks:', audioChunksRef.current.length);
+        console.log('MediaRecorder stop event fired');
+        console.log('Final chunks count:', audioChunksRef.current.length);
+        audioChunksRef.current.forEach((chunk, index) => {
+          console.log(`Chunk ${index}: ${chunk.size} bytes, type: ${chunk.type}`);
+        });
       };
       
-      // Start recording with shorter intervals to ensure data collection
-      mediaRecorderRef.current.start(100); // Collect data every 100ms instead of 1000ms
+      mediaRecorderRef.current.onstart = () => {
+        console.log('MediaRecorder start event fired');
+      };
+      
+      mediaRecorderRef.current.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+      };
+      
+      // Start recording with very frequent data collection
+      console.log('Starting MediaRecorder...');
+      mediaRecorderRef.current.start(250); // Collect data every 250ms
+      console.log('MediaRecorder start() called, state:', mediaRecorderRef.current.state);
+      
       setRecordingState(prev => ({ 
         ...prev, 
         isRecording: true, 
@@ -146,15 +172,24 @@ export const useRecording = () => {
   const stopRecording = async () => {
     try {
       console.log('Stopping recording...');
+      console.log('Current MediaRecorder state:', mediaRecorderRef.current?.state);
+      console.log('Chunks before stopping:', audioChunksRef.current.length);
       
       // Stop media recorder
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        console.log('Calling MediaRecorder.stop()...');
         mediaRecorderRef.current.stop();
         
-        // Wait for the final data to be available
-        await new Promise<void>((resolve) => {
+        // Wait for the final data to be available with timeout
+        await new Promise<void>((resolve, reject) => {
           if (mediaRecorderRef.current) {
+            const timeout = setTimeout(() => {
+              console.log('Timeout waiting for onstop event');
+              resolve();
+            }, 5000);
+            
             mediaRecorderRef.current.onstop = () => {
+              clearTimeout(timeout);
               console.log('Recording stopped, chunks collected:', audioChunksRef.current.length);
               resolve();
             };
@@ -166,11 +201,24 @@ export const useRecording = () => {
       
       // Stop all tracks
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        console.log('Stopping stream tracks...');
+        streamRef.current.getTracks().forEach(track => {
+          console.log('Stopping track:', track.kind, track.enabled, track.readyState);
+          track.stop();
+        });
         streamRef.current = null;
       }
       
       setRecordingState(prev => ({ ...prev, isRecording: false }));
+      
+      console.log('Final audio chunks analysis:');
+      console.log('Total chunks:', audioChunksRef.current.length);
+      let totalSize = 0;
+      audioChunksRef.current.forEach((chunk, index) => {
+        console.log(`Chunk ${index}: ${chunk.size} bytes, type: ${chunk.type}`);
+        totalSize += chunk.size;
+      });
+      console.log('Total audio data size:', totalSize, 'bytes');
       
       // Process the recorded audio with ElevenLabs
       if (audioChunksRef.current.length > 0 && elevenLabsClient.current) {
@@ -187,10 +235,16 @@ export const useRecording = () => {
             type: mimeTypeRef.current || 'audio/webm' 
           });
           
-          console.log('Audio blob size:', audioBlob.size, 'bytes');
+          console.log('Audio blob created:');
+          console.log('- Size:', audioBlob.size, 'bytes');
+          console.log('- Type:', audioBlob.type);
           
           if (audioBlob.size === 0) {
-            throw new Error('No audio data recorded');
+            throw new Error('No audio data recorded - blob size is 0');
+          }
+          
+          if (audioBlob.size < 1000) {
+            console.warn('Very small audio file, might not contain speech');
           }
           
           // Convert to the format ElevenLabs expects
@@ -203,11 +257,18 @@ export const useRecording = () => {
             type: mimeTypeRef.current || 'audio/webm' 
           });
           
+          console.log('Sending to ElevenLabs:');
+          console.log('- File name:', audioFile.name);
+          console.log('- File size:', audioFile.size);
+          console.log('- File type:', audioFile.type);
+          
           // Transcribe with ElevenLabs using the correct API format
           const transcription = await elevenLabsClient.current.speechToText.convert({
             file: audioFile,
             model_id: 'eleven_multilingual_v2'
           });
+          
+          console.log('ElevenLabs response:', transcription);
           
           setRecordingState(prev => ({ 
             ...prev, 
@@ -236,9 +297,12 @@ export const useRecording = () => {
         }
       } else {
         console.log('No audio chunks available for transcription');
+        console.log('Chunks length:', audioChunksRef.current.length);
+        console.log('ElevenLabs client available:', !!elevenLabsClient.current);
+        
         toast({
           title: "No Audio Recorded",
-          description: "No audio data was captured. Please try speaking closer to the microphone.",
+          description: "No audio data was captured. Please try speaking closer to the microphone and ensure microphone permissions are granted.",
           variant: "destructive",
         });
       }
