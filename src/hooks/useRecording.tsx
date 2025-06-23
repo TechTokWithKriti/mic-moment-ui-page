@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { ElevenLabsClient } from 'elevenlabs';
@@ -144,11 +145,13 @@ export const useRecording = () => {
           // Convert to the format ElevenLabs expects
           const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
           
-          // Transcribe with ElevenLabs
-          const transcription = await elevenLabsClient.current.speechToText.convert({
-            audio: audioFile,
-            model_id: 'eleven_multilingual_v2'
-          });
+          // Transcribe with ElevenLabs using the correct API format
+          const transcription = await elevenLabsClient.current.speechToText.convert(
+            audioFile,
+            {
+              model_id: 'eleven_multilingual_v2'
+            }
+          );
           
           setRecordingState(prev => ({ 
             ...prev, 
