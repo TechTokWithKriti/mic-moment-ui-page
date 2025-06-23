@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Mic, MicOff, Key, FileText, Brain } from 'lucide-react';
 import { useRecording } from '@/hooks/useRecording';
 import { useSummary } from '@/hooks/useSummary';
@@ -181,8 +182,19 @@ const RecordingButton = ({ participantName, onTranscriptComplete }: RecordingBut
       )}
       
       {transcript && (
-        <div className="text-xs text-gray-600 max-w-xs text-center">
-          <strong>Transcript:</strong> {transcript.substring(0, 100)}...
+        <div className="max-w-xs text-xs">
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="transcript" className="border-0">
+              <AccordionTrigger className="text-xs text-gray-600 py-1 hover:no-underline">
+                <span className="text-left">
+                  <strong>Transcript:</strong> {transcript.split('\n')[0].substring(0, 50)}...
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="text-gray-700 text-xs pt-1">
+                {transcript}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       )}
 
